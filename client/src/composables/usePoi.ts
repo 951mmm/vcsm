@@ -1,24 +1,14 @@
 import { ref } from 'vue'
 import { useUserStore } from '../stores/user'
+import type { Poi } from '../types/poi'
+import type { PoiType } from '../constants/poi'
 
-interface Poi {
-    id: number
+export interface PoiInput {
     name: string
     longitude: number
     latitude: number
     height: number
-    type: 'sport' | 'education' | 'transportation'
-    description?: string
-    created_by?: number
-    created_at?: string
-}
-
-interface PoiInput {
-    name: string
-    longitude: number
-    latitude: number
-    height: number
-    type: 'sport' | 'education' | 'transportation'
+    type: PoiType
     description?: string
 }
 
@@ -28,15 +18,18 @@ export function usePoi() {
     const poisLoaded = ref(false)
     const loadError = ref(false)
 
+    const getAuthHeaders = () => ({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userStore.token}`
+    })
+
     const loadPois = async () => {
         loadError.value = false
         poisLoaded.value = false
         try {
             const url = userStore.isAdmin ? '/api/admin/pois' : '/api/map/pois'
             const response = await fetch(url, {
-                headers: {
-                    'Authorization': `Bearer ${userStore.token}`
-                }
+                headers: getAuthHeaders()
             })
             if (!response.ok) throw new Error('获取POI失败')
             const data = await response.json()
@@ -51,10 +44,7 @@ export function usePoi() {
     const addPoi = async (poi: PoiInput) => {
         const response = await fetch('/api/admin/pois', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${userStore.token}`
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(poi)
         })
         if (!response.ok) throw new Error('添加POI失败')
@@ -64,10 +54,7 @@ export function usePoi() {
     const updatePoi = async (id: number, poi: PoiInput) => {
         const response = await fetch(`/api/admin/pois/${id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${userStore.token}`
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(poi)
         })
         if (!response.ok) throw new Error('更新POI失败')
@@ -77,9 +64,7 @@ export function usePoi() {
     const deletePoi = async (id: number) => {
         const response = await fetch(`/api/admin/pois/${id}`, {
             method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${userStore.token}`
-            }
+            headers: getAuthHeaders()
         })
         if (!response.ok) throw new Error('删除POI失败')
         await loadPois()

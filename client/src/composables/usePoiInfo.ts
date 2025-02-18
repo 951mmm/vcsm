@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { Poi } from './usePoi'
+import type { Poi } from '../types/poi'
 
 export function usePoiInfo() {
     const selectedPoi = ref<Poi | null>(null)
@@ -14,7 +14,8 @@ export function usePoiInfo() {
             longitude: Number(poi.longitude),
             latitude: Number(poi.latitude),
             height: Number(poi.height),
-            description: poi.description
+            description: poi.description,
+            created_at: poi.created_at
         }
         poiInfoVisible.value = true
     }
