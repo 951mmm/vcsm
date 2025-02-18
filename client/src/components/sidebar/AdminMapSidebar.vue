@@ -7,7 +7,7 @@
                 </el-icon>
                 <span>修改POI</span>
             </el-menu-item>
-            <el-menu-item index="2" @click="userDialogVisible = true">
+            <el-menu-item index="2" @click="emit('openUserDialog')">
                 <el-icon>
                     <User />
                 </el-icon>
@@ -15,35 +15,12 @@
             </el-menu-item>
         </el-menu>
     </el-aside>
-
-    <!-- 用户管理对话框 -->
-    <UserDialog v-model="userDialogVisible" @add="handleAddUser" @edit="handleEditUser" @delete="handleDeleteUser" />
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { Location, User } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import UserDialog from '../user/UserDialog.vue'
 
-const emit = defineEmits(['openPoiDialog'])
-const userDialogVisible = ref(false)
-
-// 用户管理相关处理函数
-const handleAddUser = (userData) => {
-    console.log('添加用户:', userData)
-    // TODO: 调用后端API添加用户
-}
-
-const handleEditUser = (userData) => {
-    console.log('编辑用户:', userData)
-    // TODO: 调用后端API编辑用户
-}
-
-const handleDeleteUser = (userData) => {
-    console.log('删除用户:', userData)
-    // TODO: 调用后端API删除用户
-}
+const emit = defineEmits(['openPoiDialog', 'openUserDialog'])
 </script>
 
 <style scoped>

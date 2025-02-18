@@ -29,6 +29,7 @@ export function usePoiInfo() {
     // 聚焦到POI
     const focusOnPoi = (poi: Poi, viewer: any) => {
         if (!viewer?.cesiumInstance) return
+        console.log('focusOnPoi', poi, viewer)
         const { Cesium } = viewer.cesiumInstance
 
         viewer.camera.flyTo({

@@ -32,7 +32,7 @@
 import { computed } from 'vue'
 import { Location } from '@element-plus/icons-vue'
 import { poiTypeMap } from '../../constants/poi'
-import type { Poi } from '../../composables/usePoi'
+import type { Poi } from '../../types/poi'
 
 const props = defineProps<{
     modelValue: boolean
@@ -42,7 +42,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     'update:modelValue': [value: boolean]
     close: []
-    focus: [poi: Poi]
+    focus: [poi: Poi | null]
 }>()
 
 const visible = computed({

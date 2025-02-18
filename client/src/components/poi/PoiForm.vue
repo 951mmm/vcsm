@@ -67,7 +67,8 @@ const handleSubmit = async () => {
         if (!valid) return
         submitting.value = true
         try {
-            await emit('submit', form.value)
+            console.log('submit', form.value)
+            emit('submit', form.value)
             visible.value = false
         } finally {
             submitting.value = false

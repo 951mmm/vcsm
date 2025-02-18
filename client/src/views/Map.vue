@@ -10,7 +10,8 @@
 
     <div class="main-content">
       <!-- 管理员侧边栏 -->
-      <AdminMapSidebar v-if="userStore.isAdmin" @openPoiDialog="poiDialogVisible = true" />
+      <AdminMapSidebar v-if="userStore.isAdmin" @openPoiDialog="poiDialogVisible = true"
+        @openUserDialog="userDialogVisible = true" />
 
       <div class="map-container" :class="{ 'with-sidebar': userStore.isAdmin }">
         <template v-if="poisLoaded">
@@ -55,6 +56,9 @@
 
     <!-- POI信息对话框 -->
     <PoiInfoDialog v-model="poiInfoVisible" :poi="selectedPoi" @focus="handleFocus" @close="handleCloseInfo" />
+
+    <!-- 用户管理对话框 -->
+    <UserDialog v-if="userStore.isAdmin" v-model="userDialogVisible" />
   </div>
 </template>
 
@@ -73,6 +77,7 @@ import { useMapConfig } from '../composables/useMapConfig'
 import { usePoiInfo } from '../composables/usePoiInfo'
 import MapLegend from '../components/map/MapLegend.vue'
 import AdminMapSidebar from '../components/sidebar/AdminMapSidebar.vue'
+import UserDialog from '../components/user/UserDialog.vue'
 // import type { PoiType } from '../constants/poi'
 
 const router = useRouter()
@@ -97,6 +102,7 @@ const {
 const poiDialogVisible = ref(false)
 const poiFormVisible = ref(false)
 const editingPoi = ref(null)
+const userDialogVisible = ref(false)
 
 let isViewerReady = false
 
