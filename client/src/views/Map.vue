@@ -10,16 +10,7 @@
 
     <div class="main-content">
       <!-- 管理员侧边栏 -->
-      <el-aside v-if="userStore.isAdmin" width="200px" class="sidebar">
-        <el-menu default-active="1" class="menu">
-          <el-menu-item index="1" @click="poiDialogVisible = true">
-            <el-icon>
-              <Location />
-            </el-icon>
-            <span>修改POI</span>
-          </el-menu-item>
-        </el-menu>
-      </el-aside>
+      <AdminMapSidebar v-if="userStore.isAdmin" @openPoiDialog="poiDialogVisible = true" />
 
       <div class="map-container" :class="{ 'with-sidebar': userStore.isAdmin }">
         <template v-if="poisLoaded">
@@ -81,6 +72,7 @@ import { usePoi } from '../composables/usePoi'
 import { useMapConfig } from '../composables/useMapConfig'
 import { usePoiInfo } from '../composables/usePoiInfo'
 import MapLegend from '../components/map/MapLegend.vue'
+import AdminMapSidebar from '../components/sidebar/AdminMapSidebar.vue'
 // import type { PoiType } from '../constants/poi'
 
 const router = useRouter()

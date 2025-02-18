@@ -17,6 +17,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     } catch (error) {
         res.status(401).json({ message: '无效的认证令牌' })
     }
+
 }
 
 export const adminMiddleware = (req: Request, res: Response, next: NextFunction) => {
