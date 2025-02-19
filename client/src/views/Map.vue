@@ -37,17 +37,24 @@
               <vc-graphics-billboard :image="locationIcon" :scale="1.5" :color="getPoiColor(poi.type)" />
             </vc-entity>
 
+            <!-- 退出聚焦按钮 -->
+            <ExitFocusButton v-model="isFocusing" :default-position="mapConfig.whuPosition" @exit="handleExitFocus" />
+
             <!-- 量算工具 -->
             <vc-measurements ref="measurementsRef" :measurementType="measurementType" :mainFabOpts="mainFabOpts"
               :polylineOpts="polylineOpts" :pointOpts="pointOpts" @mouseEvt="measureMouseEvt"
               @drawEvt="measureDrawEvt" />
 
             <!-- POI信息对话框 -->
-            <PoiInfoDialog v-model="poiInfoVisible" :poi="selectedPoi" @close="handleCloseInfo" />
+            <PoiInfoDialog v-model="poiInfoVisible" :poi="selectedPoi" @close="handleCloseInfo"
+              @show-realtime="handleShowRealtime" />
           </vc-viewer>
 
           <!-- 图例 -->
           <MapLegend v-model="visibleTypes" v-model:showBuildings="showBuildings" />
+
+          <!-- 实时信息对话框 -->
+          <PoiRealtimeInfo v-model="realtimeInfoVisible" :poi="realtimePoi" />
         </template>
         <div v-else class="loading-container">
           <el-empty description="加载中..." v-if="!loadError">
@@ -91,10 +98,14 @@ import UserDialog from '../components/user/UserDialog.vue'
 import { VcViewer } from 'vue-cesium'
 import type { VcReadyObject } from 'vue-cesium/es/utils/types'
 import type { Ref } from 'vue'
+import PoiRealtimeInfo from '../components/poi/PoiRealtimeInfo.vue'
+import { Back } from '@element-plus/icons-vue'
+import ExitFocusButton from '../components/map/ExitFocusButton.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const viewerRef = shallowRef<any>(null)
+const cesiumRef = shallowRef<any>(null)  // 保存Cesium引用
 
 const {
   pois,
@@ -131,6 +142,13 @@ const visiblePois = computed(() => {
 const selectedPoi = ref<Poi | null>(null)
 const poiInfoVisible = ref(false)
 
+// 实时信息对话框
+const realtimeInfoVisible = ref(false)
+const realtimePoi = ref<Poi | undefined>()
+
+// 聚焦状态
+const isFocusing = ref(false)
+
 // 点击事件处理
 const handlePoiClick = (poi: Poi) => {
   selectedPoi.value = {
@@ -152,6 +170,24 @@ const handleCloseInfo = () => {
   selectedPoi.value = null
 }
 
+// 处理显示实时信息
+const handleShowRealtime = (poi: Poi) => {
+  realtimePoi.value = poi
+  realtimeInfoVisible.value = true
+  isFocusing.value = true
+}
+
+// 退出聚焦
+const handleExitFocus = () => {
+  // 恢复图例显示
+  const mapLegend = document.querySelector('.map-legend') as HTMLElement
+  if (mapLegend) {
+    mapLegend.style.display = 'block'
+  }
+
+  // 关闭实时信息面板
+  realtimeInfoVisible.value = false
+}
 
 // 初始化
 onMounted(async () => {
@@ -163,6 +199,9 @@ onMounted(async () => {
 const onViewerReady = async ({ Cesium, viewer }: VcReadyObject) => {
   if (isViewerReady) return
   isViewerReady = true
+
+  // 保存Cesium引用
+  cesiumRef.value = Cesium
 
   // 缩放到武汉大学
   viewer.camera.flyTo({
@@ -431,5 +470,26 @@ const locationIcon = 'data:image/svg+xml;base64,' + btoa(`
 
 .v-modal {
   z-index: 2998 !important;
+}
+
+/* 退出聚焦按钮样式 */
+.exit-focus-btn {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  z-index: 1;
+}
+
+.exit-focus-btn :deep(.el-button) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 16px;
+  background-color: rgba(64, 158, 255, 0.9);
+}
+
+.exit-focus-btn :deep(.el-button:hover) {
+  background-color: rgba(64, 158, 255, 1);
 }
 </style>

@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { Location } from '@element-plus/icons-vue'
 import { poiTypeMap } from '../../constants/poi'
 import type { PoiInfoDialogProps, PoiInfoDialogEmits, PoiInfoDialogExpose } from './PoiInfoDialog'
@@ -37,7 +37,12 @@ import type { Poi } from '../../types/poi'
 import { useVueCesium } from 'vue-cesium'
 
 const props = defineProps<PoiInfoDialogProps>()
-const emit = defineEmits<PoiInfoDialogEmits>()
+const emit = defineEmits<{
+    (e: 'update:modelValue', value: boolean): void
+    (e: 'close'): void
+    (e: 'show-realtime', poi: Poi): void
+}>()
+
 const $vc = useVueCesium()
 
 const visible = computed({
@@ -51,11 +56,19 @@ const formatCoordinate = (value: number) => {
 }
 
 // 聚焦到POI
-const focusOnPoi = (poi: Poi) => {
-    console.log('poi: ', poi)
+const focusOnPoi = async (poi: Poi) => {
     const { Cesium, viewer } = $vc
 
     if (!viewer || !Cesium) return
+
+    // 隐藏图例
+    const mapLegend = document.querySelector('.map-legend') as HTMLElement
+    if (mapLegend) {
+        mapLegend.style.display = 'none'
+    }
+
+    // 发送显示实时信息的事件
+    emit('show-realtime', poi)
 
     viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(
@@ -70,6 +83,7 @@ const focusOnPoi = (poi: Poi) => {
         },
         duration: 2,
         complete: () => {
+            // 只关闭POI信息对话框
             emit('update:modelValue', false)
             emit('close')
         }
