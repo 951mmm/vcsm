@@ -34,7 +34,7 @@
             <!-- POI点 -->
             <vc-entity v-for="poi in visiblePois" :key="poi.id" :position="[poi.longitude, poi.latitude, poi.height]"
               @click="handlePoiClick(poi)">
-              <vc-graphics-point :pixelSize="10" :color="getPoiColor(poi.type)" />
+              <vc-graphics-billboard :image="locationIcon" :scale="1.5" :color="getPoiColor(poi.type)" />
             </vc-entity>
 
             <!-- 量算工具 -->
@@ -88,9 +88,11 @@ import MapLegend from '../components/map/MapLegend.vue'
 import AdminMapSidebar from '../components/sidebar/AdminMapSidebar.vue'
 import UserDialog from '../components/user/UserDialog.vue'
 import { VcViewer } from 'vue-cesium'
+import { useMapStore } from '../stores/map'
 
 const router = useRouter()
 const userStore = useUserStore()
+const mapStore = useMapStore()
 const viewerRef = shallowRef(null)
 
 const {
@@ -149,6 +151,9 @@ onMounted(async () => {
 const onViewerReady = async ({ Cesium, viewer }) => {
   if (isViewerReady) return
   isViewerReady = true
+
+  // 保存 viewer 到 store
+  mapStore.setViewer(viewer)
 
   // 缩放到武汉大学
   viewer.camera.flyTo({
@@ -237,11 +242,10 @@ const handleLogout = () => {
 
 // 处理聚焦
 const handleFocus = (poi) => {
-  focusOnPoi(poi, viewerRef.value)
+  focusOnPoi(poi)
 }
 
 const whuGeojsonUrl = 'http://localhost:3000/static/geojson/whu.geojson'
-
 
 const measurementsRef = ref(null)
 const measurementType = ref('point')
@@ -315,6 +319,12 @@ const measureDrawEvt = (e, viewer) => {
     })
   }
 }
+
+const locationIcon = 'data:image/svg+xml;base64,' + btoa(`
+<svg t="1710420831144" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4286" width="32" height="32">
+  <path d="M512 85.333333c-164.949333 0-298.666667 133.738667-298.666667 298.666667 0 164.949333 298.666667 554.666667 298.666667 554.666667s298.666667-389.717333 298.666667-554.666667c0-164.928-133.717333-298.666667-298.666667-298.666667z m0 448a149.333333 149.333333 0 1 1 0-298.666666 149.333333 149.333333 0 0 1 0 298.666666z" fill="#FFFFFF" p-id="4287"></path>
+</svg>
+`)
 
 </script>
 

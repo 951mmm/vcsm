@@ -18,7 +18,7 @@
             </div>
         </template>
         <template #footer>
-            <el-button type="primary" @click="$emit('focus', poi)">
+            <el-button type="primary" @click="$emit('focus')">
                 <el-icon>
                     <Location />
                 </el-icon>
@@ -42,7 +42,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     'update:modelValue': [value: boolean]
     close: []
-    focus: [poi: Poi | null]
+    focus: []
 }>()
 
 const visible = computed({

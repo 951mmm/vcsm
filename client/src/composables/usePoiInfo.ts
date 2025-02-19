@@ -1,9 +1,11 @@
-import { ref } from 'vue'
+import { ref, toRaw } from 'vue'
 import type { Poi } from '../types/poi'
+import { useMapStore } from '../stores/map'
 
 export function usePoiInfo() {
     const selectedPoi = ref<Poi | null>(null)
     const poiInfoVisible = ref(false)
+    const mapStore = useMapStore()
 
     // 点击事件处理
     const handlePoiClick = (poi: Poi) => {
@@ -27,9 +29,9 @@ export function usePoiInfo() {
     }
 
     // 聚焦到POI
-    const focusOnPoi = (poi: Poi, viewer: any) => {
+    const focusOnPoi = (poi: Poi) => {
+        const viewer = toRaw(mapStore.viewer)
         if (!viewer?.cesiumInstance) return
-        console.log('focusOnPoi', poi, viewer)
         const { Cesium } = viewer.cesiumInstance
 
         viewer.camera.flyTo({
@@ -43,10 +45,11 @@ export function usePoiInfo() {
                 pitch: Cesium.Math.toRadians(-45),
                 roll: 0
             },
-            duration: 1.5
+            duration: 1.5,
+            complete: () => {
+                handleCloseInfo()
+            }
         })
-
-        handleCloseInfo()
     }
 
     return {
