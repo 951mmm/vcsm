@@ -1,12 +1,14 @@
 <template>
-    <div v-if="modelValue" class="exit-focus-btn">
-        <el-button type="primary" @click="handleClick" size="large">
-            <el-icon>
-                <Back />
-            </el-icon>
-            退出聚焦
-        </el-button>
-    </div>
+    <transition name="fade" mode="out-in">
+        <div v-if="modelValue" class="exit-focus-btn">
+            <el-button type="primary" @click="handleClick" size="large">
+                <el-icon>
+                    <Back />
+                </el-icon>
+                退出聚焦
+            </el-button>
+        </div>
+    </transition>
 </template>
 
 <script setup lang="ts">
@@ -65,5 +67,23 @@ const handleClick = () => {
 
 .exit-focus-btn :deep(.el-button:hover) {
     background-color: rgba(64, 158, 255, 1);
+}
+
+/* 淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 2s ease, transform 2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateX(-20px);
+}
+
+.fade-enter-to,
+.fade-leave-from {
+    opacity: 1;
+    transform: translateX(0);
 }
 </style>

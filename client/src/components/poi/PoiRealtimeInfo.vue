@@ -1,25 +1,27 @@
 <template>
-    <div v-if="visible" class="realtime-info-panel">
-        <div class="panel-header">
-            <span class="title">{{ poi?.name }} - 实时信息</span>
-            <el-button type="text" @click="visible = false" class="close-btn">
-                <el-icon>
-                    <Close />
-                </el-icon>
-            </el-button>
+    <transition name="fade" mode="out-in">
+        <div v-if="visible" class="realtime-info-panel">
+            <div class="panel-header">
+                <span class="title">{{ poi?.name }} - 实时信息</span>
+                <el-button type="text" @click="visible = false" class="close-btn">
+                    <el-icon>
+                        <Close />
+                    </el-icon>
+                </el-button>
+            </div>
+            <div class="panel-content">
+                <el-table :data="realtimeInfos" style="width: 100%" v-loading="loading" size="small" :max-height="300">
+                    <el-table-column prop="name" label="名称" min-width="100" />
+                    <el-table-column prop="value" label="值" min-width="100" />
+                    <el-table-column label="更新时间" width="180">
+                        <template #default="{ row }">
+                            {{ new Date(row.updated_at).toLocaleString() }}
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
         </div>
-        <div class="panel-content">
-            <el-table :data="realtimeInfos" style="width: 100%" v-loading="loading" size="small" :max-height="300">
-                <el-table-column prop="name" label="名称" min-width="100" />
-                <el-table-column prop="value" label="值" min-width="100" />
-                <el-table-column label="更新时间" width="180">
-                    <template #default="{ row }">
-                        {{ new Date(row.updated_at).toLocaleString() }}
-                    </template>
-                </el-table-column>
-            </el-table>
-        </div>
-    </div>
+    </transition>
 </template>
 
 <script setup lang="ts">
@@ -140,5 +142,23 @@ watch(() => props.poi, (newValue) => {
 
 :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
     background-color: #fafafa;
+}
+
+/* 淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 2s ease, transform 2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.fade-enter-to,
+.fade-leave-from {
+    opacity: 1;
+    transform: translateY(0);
 }
 </style>

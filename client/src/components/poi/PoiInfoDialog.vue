@@ -70,6 +70,10 @@ const focusOnPoi = async (poi: Poi) => {
     // 发送显示实时信息的事件
     emit('show-realtime', poi)
 
+    // 立即关闭POI信息对话框
+    emit('update:modelValue', false)
+    emit('close')
+
     viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(
             poi.longitude,
@@ -81,12 +85,7 @@ const focusOnPoi = async (poi: Poi) => {
             pitch: Cesium.Math.toRadians(-40),
             roll: 0
         },
-        duration: 2,
-        complete: () => {
-            // 只关闭POI信息对话框
-            emit('update:modelValue', false)
-            emit('close')
-        }
+        duration: 2
     })
 }
 

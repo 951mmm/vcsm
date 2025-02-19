@@ -40,9 +40,9 @@
             <!-- 退出聚焦按钮 -->
             <ExitFocusButton v-model="isFocusing" :default-position="mapConfig.whuPosition" @exit="handleExitFocus" />
 
-            <!-- 量算工具 -->
-            <vc-measurements ref="measurementsRef" :measurementType="measurementType" :mainFabOpts="mainFabOpts"
-              :polylineOpts="polylineOpts" :pointOpts="pointOpts" @mouseEvt="measureMouseEvt"
+            <!-- 量算工具（仅管理员可见） -->
+            <vc-measurements v-if="userStore.isAdmin" ref="measurementsRef" :measurementType="measurementType"
+              :mainFabOpts="mainFabOpts" :polylineOpts="polylineOpts" :pointOpts="pointOpts" @mouseEvt="measureMouseEvt"
               @drawEvt="measureDrawEvt" />
 
             <!-- POI信息对话框 -->
