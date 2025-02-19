@@ -26,6 +26,11 @@
               <vc-imagery-provider-tianditu mapStyle="cia_c" token="14b13410e1233fa01a9a03031e56c94d" />
             </vc-layer-imagery>
 
+            <!-- GeoJSON 数据 -->
+            <!-- <vc-datasource-geojson ref="whuGeojsonRef" :data="whuGeojsonUrl" :stroke="whuGeojsonStyle.stroke"
+              :strokeWidth="whuGeojsonStyle.strokeWidth" :fill="whuGeojsonStyle.fill" :clampToGround="false"
+              :show="true" @ready="onWhuGeojsonReady"/> -->
+
             <!-- POI点 -->
             <vc-entity v-for="poi in visiblePois" :key="poi.id" :position="[poi.longitude, poi.latitude, poi.height]"
               @click="handlePoiClick(poi)">
@@ -35,7 +40,7 @@
           </vc-viewer>
 
           <!-- 图例 -->
-          <MapLegend v-model="visibleTypes" />
+          <MapLegend v-model="visibleTypes" v-model:showBuildings="showBuildings" />
         </template>
         <div v-else class="loading-container">
           <el-empty description="加载中..." v-if="!loadError">
@@ -63,7 +68,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, shallowRef, computed, nextTick } from 'vue'
+import { ref, onMounted, shallowRef, computed, nextTick, watch } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -78,7 +83,7 @@ import { usePoiInfo } from '../composables/usePoiInfo'
 import MapLegend from '../components/map/MapLegend.vue'
 import AdminMapSidebar from '../components/sidebar/AdminMapSidebar.vue'
 import UserDialog from '../components/user/UserDialog.vue'
-// import type { PoiType } from '../constants/poi'
+import { VcViewer } from 'vue-cesium'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -106,9 +111,9 @@ const userDialogVisible = ref(false)
 
 let isViewerReady = false
 
-
 // 可见的POI类型
 const visibleTypes = ref(['sport', 'education', 'transportation'])
+const showBuildings = ref(true)  // 添加控制白膜显示的状态
 
 // 过滤显示的POI
 const visiblePois = computed(() => {
@@ -141,6 +146,7 @@ const onViewerReady = async ({ Cesium, viewer }) => {
   if (isViewerReady) return
   isViewerReady = true
 
+  // 缩放到武汉大学
   viewer.camera.flyTo({
     destination: Cesium.Cartesian3.fromDegrees(
       mapConfig.value.whuPosition[0],
@@ -158,6 +164,27 @@ const onViewerReady = async ({ Cesium, viewer }) => {
   viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(
     Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK
   )
+  // 加载建筑白膜
+  const promise = Cesium.GeoJsonDataSource.load(whuGeojsonUrl)
+  promise.then((dataSource) => {
+    viewer.dataSources.add(dataSource)
+    const entities = dataSource.entities.values
+    for (let i = 0; i < entities.length; i++) {
+      let entity = entities[i]
+      entity.name = `${entity.name}-白膜`
+      entity.polygon.material = Cesium.Color.ALICEBLUE
+      entity.polygon.extrudedHeight = 40
+      entity.polygon.material.alpha = 0.5
+      entity.polygon.outlineColor = Cesium.Color.WHITE
+      entity.polygon.heightReference = Cesium.HeightReference.RELATIVE_TO_GROUND
+      // 添加对显示状态的监听
+      watch(showBuildings, (show) => {
+        entity.show = show
+      })
+    }
+  }).catch((error) => {
+    console.log(error)
+  })
 }
 
 // POI 操作处理
@@ -206,6 +233,28 @@ const handleLogout = () => {
 const handleFocus = (poi) => {
   focusOnPoi(poi, viewerRef.value)
 }
+
+const whuGeojsonUrl = 'http://localhost:3000/static/geojson/whu.geojson'
+const whuGeojsonRef = ref(null)
+const whuGeojsonStyle = {
+  stroke: 'rgb(255, 0, 0)',
+  strokeWidth: 2,
+  fill: 'rgba(255, 0, 0, 0.1)'
+}
+
+// const onWhuGeojsonReady = async (ReadyObject) => {
+//   console.log(ReadyObject)
+//   const { viewer, cesiumObject } = ReadyObject
+
+//   if (viewer) {
+//     // 缩放到数据范围
+//     await viewer.zoomTo(cesiumObject)
+//   }
+// }
+
+// const onWhuGeojsonBeforeLoad = (Instance) => {
+//   console.log(Instance)
+// }
 </script>
 
 <style scoped>

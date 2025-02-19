@@ -8,11 +8,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "preserveConstEnums": true,
     "types": [
       "vue-cesium/Cesium",
       "vue-cesium/global"
-    ],
-    "preserveConstEnums": true
+    ]
   },
   "include": [
     "src/**/*.ts",

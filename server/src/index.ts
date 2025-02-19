@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
 import mapRouter from './routes/map'
 import authRouter from './routes/auth'
 import adminRouter from './routes/admin'
@@ -11,6 +12,9 @@ const port = 3000
 
 app.use(cors())
 app.use(express.json())
+
+// 静态资源服务
+app.use('/static', express.static(path.join(__dirname, '../public')))
 
 // 添加路由
 app.use('/api/map', mapRouter)
