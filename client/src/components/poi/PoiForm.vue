@@ -58,6 +58,19 @@ const form = ref({
     description: ''
 })
 
+// 设置坐标值的方法
+const setPosition = (position) => {
+    const { longitude, latitude, height } = position
+    form.value.longitude = Number(longitude)
+    form.value.latitude = Number(latitude)
+    form.value.height = Number(height || 0)
+}
+
+// 对外暴露方法
+defineExpose({
+    setPosition
+})
+
 const rules = poiFormRules
 
 const handleSubmit = async () => {

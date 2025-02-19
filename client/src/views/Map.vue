@@ -37,6 +37,10 @@
               <vc-graphics-point :pixelSize="10" :color="getPoiColor(poi.type)" />
             </vc-entity>
 
+            <!-- 量算工具 -->
+            <vc-measurements ref="measurementsRef" :measurementType="measurementType" :mainFabOpts="mainFabOpts"
+              :polylineOpts="polylineOpts" :pointOpts="pointOpts" @mouseEvt="measureMouseEvt"
+              @drawEvt="measureDrawEvt" />
           </vc-viewer>
 
           <!-- 图例 -->
@@ -56,7 +60,7 @@
     <PoiDialog v-model="poiDialogVisible" :pois="pois" :is-admin="userStore.isAdmin" @edit="handleEditPoi"
       @delete="handleDeletePoi" @add="handleAddPoi" />
 
-    <PoiForm v-if="userStore.isAdmin" v-model="poiFormVisible" :editing-poi="editingPoi"
+    <PoiForm v-if="userStore.isAdmin" ref="poiFormRef" v-model="poiFormVisible" :editing-poi="editingPoi"
       :default-position="mapConfig.whuPosition" @submit="handleSubmitPoi" />
 
     <!-- POI信息对话框 -->
@@ -68,10 +72,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, shallowRef, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, shallowRef, computed, nextTick, watch, toRaw } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Location } from '@element-plus/icons-vue'
 import PoiDialog from '../components/poi/PoiDialog.vue'
 import PoiForm from '../components/poi/PoiForm.vue'
@@ -113,7 +117,7 @@ let isViewerReady = false
 
 // 可见的POI类型
 const visibleTypes = ref(['sport', 'education', 'transportation'])
-const showBuildings = ref(true)  // 添加控制白膜显示的状态
+const showBuildings = ref(false)  // 默认不显示白膜
 
 // 过滤显示的POI
 const visiblePois = computed(() => {
@@ -177,6 +181,7 @@ const onViewerReady = async ({ Cesium, viewer }) => {
       entity.polygon.material.alpha = 0.5
       entity.polygon.outlineColor = Cesium.Color.WHITE
       entity.polygon.heightReference = Cesium.HeightReference.RELATIVE_TO_GROUND
+      entity.show = showBuildings.value
       // 添加对显示状态的监听
       watch(showBuildings, (show) => {
         entity.show = show
@@ -217,6 +222,7 @@ const handleSubmitPoi = async (formData) => {
       ElMessage.success('添加成功')
     }
     poiFormVisible.value = false
+
   } catch (error) {
     ElMessage.error(editingPoi.value ? '更新失败' : '添加失败')
     throw error
@@ -235,26 +241,81 @@ const handleFocus = (poi) => {
 }
 
 const whuGeojsonUrl = 'http://localhost:3000/static/geojson/whu.geojson'
-const whuGeojsonRef = ref(null)
-const whuGeojsonStyle = {
-  stroke: 'rgb(255, 0, 0)',
-  strokeWidth: 2,
-  fill: 'rgba(255, 0, 0, 0.1)'
+
+
+const measurementsRef = ref(null)
+const measurementType = ref('point')
+
+// 主按钮配置
+const mainFabOpts = {
+  direction: 'right',
+  hideIcon: 'vc-icons-measurement-button-clear',
+  activeIcon: 'vc-icons-measurement-button-clear',
+  verticalActionsAlign: 'center',
+  hideInactiveActs: false,
+  activeBgColor: '#e9e9e9',
+  inactiveBgColor: '#ffffff',
+  size: 'small'
 }
 
-// const onWhuGeojsonReady = async (ReadyObject) => {
-//   console.log(ReadyObject)
-//   const { viewer, cesiumObject } = ReadyObject
+// 点样式配置
+const pointOpts = {
+  show: true,
+  color: '#ffffff',
+  pixelSize: 8,
+  outlineColor: '#ffa500',
+  outlineWidth: 2,
+  disableDepthTestDistance: Number.POSITIVE_INFINITY
+}
 
-//   if (viewer) {
-//     // 缩放到数据范围
-//     await viewer.zoomTo(cesiumObject)
-//   }
-// }
+// 线样式配置
+const polylineOpts = {
+  show: true,
+  width: 2,
+  material: 'yellow'
+}
 
-// const onWhuGeojsonBeforeLoad = (Instance) => {
-//   console.log(Instance)
-// }
+// 处理量算事件
+const measureMouseEvt = (e, viewer) => {
+  //   console.log('e: ', e)
+  //   console.log('viewer: ', viewer)
+}
+
+const poiFormRef = ref(null)
+
+const measureDrawEvt = (e, viewer) => {
+  if (e.finished === true) {
+    const [longitude, latitude, height] = toRaw(e.positionDegrees)
+
+    // 弹出确认对话框
+    ElMessageBox.confirm('是否要在此位置创建新的POI？', '提示', {
+      confirmButtonText: '创建',
+      cancelButtonText: '取消',
+      type: 'info'
+    }).then(() => {
+      // 打开POI表单
+      editingPoi.value = null
+      poiFormVisible.value = true
+
+      // 设置默认位置
+      nextTick(() => {
+        if (poiFormRef.value) {
+          poiFormRef.value.setPosition({
+            longitude: Number(longitude).toFixed(6),
+            latitude: Number(latitude).toFixed(6),
+            height: Number(height || 0).toFixed(2)
+          })
+        }
+      })
+    }).catch(() => {
+      // 取消创建时清除测量点
+      if (measurementsRef.value) {
+        measurementsRef.value.clear()
+      }
+    })
+  }
+}
+
 </script>
 
 <style scoped>
