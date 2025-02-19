@@ -41,6 +41,9 @@
             <vc-measurements ref="measurementsRef" :measurementType="measurementType" :mainFabOpts="mainFabOpts"
               :polylineOpts="polylineOpts" :pointOpts="pointOpts" @mouseEvt="measureMouseEvt"
               @drawEvt="measureDrawEvt" />
+
+            <!-- POI信息对话框 -->
+            <PoiInfoDialog v-model="poiInfoVisible" :poi="selectedPoi" @close="handleCloseInfo" />
           </vc-viewer>
 
           <!-- 图例 -->
@@ -63,37 +66,35 @@
     <PoiForm v-if="userStore.isAdmin" ref="poiFormRef" v-model="poiFormVisible" :editing-poi="editingPoi"
       :default-position="mapConfig.whuPosition" @submit="handleSubmitPoi" />
 
-    <!-- POI信息对话框 -->
-    <PoiInfoDialog v-model="poiInfoVisible" :poi="selectedPoi" @focus="handleFocus" @close="handleCloseInfo" />
+
 
     <!-- 用户管理对话框 -->
     <UserDialog v-if="userStore.isAdmin" v-model="userDialogVisible" />
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, shallowRef, computed, nextTick, watch, toRaw } from 'vue'
 import { useUserStore } from '../stores/user'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Location } from '@element-plus/icons-vue'
 import PoiDialog from '../components/poi/PoiDialog.vue'
 import PoiForm from '../components/poi/PoiForm.vue'
 import PoiInfoDialog from '../components/poi/PoiInfoDialog.vue'
-import { getPoiColor, poiTypeMap } from '../constants/poi'
+import { getPoiColor, poiTypeMap, type PoiType } from '../constants/poi'
+import type { Poi } from '../types/poi'
 import { usePoi } from '../composables/usePoi'
 import { useMapConfig } from '../composables/useMapConfig'
-import { usePoiInfo } from '../composables/usePoiInfo'
 import MapLegend from '../components/map/MapLegend.vue'
 import AdminMapSidebar from '../components/sidebar/AdminMapSidebar.vue'
 import UserDialog from '../components/user/UserDialog.vue'
 import { VcViewer } from 'vue-cesium'
-import { useMapStore } from '../stores/map'
+import type { VcReadyObject } from 'vue-cesium/es/utils/types'
+import type { Ref } from 'vue'
 
 const router = useRouter()
 const userStore = useUserStore()
-const mapStore = useMapStore()
-const viewerRef = shallowRef(null)
+const viewerRef = shallowRef<any>(null)
 
 const {
   pois,
@@ -112,13 +113,13 @@ const {
 
 const poiDialogVisible = ref(false)
 const poiFormVisible = ref(false)
-const editingPoi = ref(null)
+const editingPoi = ref<Poi | null>(null)
 const userDialogVisible = ref(false)
 
 let isViewerReady = false
 
 // 可见的POI类型
-const visibleTypes = ref(['sport', 'education', 'transportation'])
+const visibleTypes = ref<PoiType[]>(['sport', 'education', 'transportation'])
 const showBuildings = ref(false)  // 默认不显示白膜
 
 // 过滤显示的POI
@@ -127,19 +128,30 @@ const visiblePois = computed(() => {
 })
 
 // POI 信息相关
-const {
-  selectedPoi,
-  poiInfoVisible,
-  handlePoiClick,
-  handleCloseInfo,
-  focusOnPoi
-} = usePoiInfo()
+const selectedPoi = ref<Poi | null>(null)
+const poiInfoVisible = ref(false)
 
-// 格式化坐标
-const formatCoordinate = (value) => {
-  const num = Number(value)
-  return isNaN(num) ? '0.000000' : num.toFixed(6)
+// 点击事件处理
+const handlePoiClick = (poi: Poi) => {
+  selectedPoi.value = {
+    id: Number(poi.id),
+    name: String(poi.name),
+    type: poi.type,
+    longitude: Number(poi.longitude),
+    latitude: Number(poi.latitude),
+    height: Number(poi.height),
+    description: poi.description,
+    created_at: poi.created_at
+  }
+  poiInfoVisible.value = true
 }
+
+// 关闭信息对话框
+const handleCloseInfo = () => {
+  poiInfoVisible.value = false
+  selectedPoi.value = null
+}
+
 
 // 初始化
 onMounted(async () => {
@@ -148,12 +160,9 @@ onMounted(async () => {
 })
 
 // 视图准备完成
-const onViewerReady = async ({ Cesium, viewer }) => {
+const onViewerReady = async ({ Cesium, viewer }: VcReadyObject) => {
   if (isViewerReady) return
   isViewerReady = true
-
-  // 保存 viewer 到 store
-  mapStore.setViewer(viewer)
 
   // 缩放到武汉大学
   viewer.camera.flyTo({
@@ -179,18 +188,19 @@ const onViewerReady = async ({ Cesium, viewer }) => {
     viewer.dataSources.add(dataSource)
     const entities = dataSource.entities.values
     for (let i = 0; i < entities.length; i++) {
-      let entity = entities[i]
-      entity.name = `${entity.name}-白膜`
-      entity.polygon.material = Cesium.Color.ALICEBLUE
-      entity.polygon.extrudedHeight = 40
-      entity.polygon.material.alpha = 0.5
-      entity.polygon.outlineColor = Cesium.Color.WHITE
-      entity.polygon.heightReference = Cesium.HeightReference.RELATIVE_TO_GROUND
-      entity.show = showBuildings.value
-      // 添加对显示状态的监听
-      watch(showBuildings, (show) => {
-        entity.show = show
-      })
+      const entity = entities[i] as any
+      if (entity.polygon) {
+        entity.name = `${entity.name}-白膜`
+        entity.polygon.material = new Cesium.ColorMaterialProperty(new Cesium.Color(0.9, 0.9, 1.0, 0.5))
+        entity.polygon.extrudedHeight = new Cesium.ConstantProperty(40)
+        entity.polygon.outlineColor = new Cesium.ConstantProperty(Cesium.Color.WHITE)
+        entity.polygon.heightReference = new Cesium.ConstantProperty(Cesium.HeightReference.RELATIVE_TO_GROUND)
+        entity.show = showBuildings.value
+        // 添加对显示状态的监听
+        watch(showBuildings, (show) => {
+          entity.show = show
+        })
+      }
     }
   }).catch((error) => {
     console.log(error)
@@ -198,7 +208,7 @@ const onViewerReady = async ({ Cesium, viewer }) => {
 }
 
 // POI 操作处理
-const handleEditPoi = (poi) => {
+const handleEditPoi = (poi: Poi) => {
   editingPoi.value = poi
   poiFormVisible.value = true
 }
@@ -208,7 +218,7 @@ const handleAddPoi = () => {
   poiFormVisible.value = true
 }
 
-const handleDeletePoi = async (poi) => {
+const handleDeletePoi = async (poi: Poi) => {
   try {
     await deletePoi(poi.id)
     ElMessage.success('删除成功')
@@ -217,7 +227,7 @@ const handleDeletePoi = async (poi) => {
   }
 }
 
-const handleSubmitPoi = async (formData) => {
+const handleSubmitPoi = async (formData: any) => {
   try {
     if (editingPoi.value) {
       await updatePoi(editingPoi.value.id, formData)
@@ -240,27 +250,22 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-// 处理聚焦
-const handleFocus = (poi) => {
-  focusOnPoi(poi)
-}
-
 const whuGeojsonUrl = 'http://localhost:3000/static/geojson/whu.geojson'
 
-const measurementsRef = ref(null)
-const measurementType = ref('point')
+const measurementsRef = ref<any>(null)
+const measurementType = ref<string>('point')
 
 // 主按钮配置
 const mainFabOpts = {
   direction: 'right',
-  hideIcon: 'vc-icons-measurement-button-clear',
+  icon: 'vc-icons-measurement-button-clear',
   activeIcon: 'vc-icons-measurement-button-clear',
   verticalActionsAlign: 'center',
   hideInactiveActs: false,
   activeBgColor: '#e9e9e9',
   inactiveBgColor: '#ffffff',
   size: 'small'
-}
+} as const
 
 // 点样式配置
 const pointOpts = {
@@ -270,24 +275,24 @@ const pointOpts = {
   outlineColor: '#ffa500',
   outlineWidth: 2,
   disableDepthTestDistance: Number.POSITIVE_INFINITY
-}
+} as const
 
 // 线样式配置
 const polylineOpts = {
   show: true,
   width: 2,
   material: 'yellow'
-}
+} as const
 
 // 处理量算事件
-const measureMouseEvt = (e, viewer) => {
-  //   console.log('e: ', e)
-  //   console.log('viewer: ', viewer)
+const measureMouseEvt = (_e: any, _viewer: any) => {
+  // console.log('e: ', e)
+  // console.log('viewer: ', viewer)
 }
 
-const poiFormRef = ref(null)
+const poiFormRef = ref<any>(null)
 
-const measureDrawEvt = (e, viewer) => {
+const measureDrawEvt = (e: any, _viewer: any) => {
   if (e.finished === true) {
     const [longitude, latitude, height] = toRaw(e.positionDegrees)
 

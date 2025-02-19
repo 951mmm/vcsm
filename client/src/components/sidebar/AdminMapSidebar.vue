@@ -17,10 +17,13 @@
     </el-aside>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { Location, User } from '@element-plus/icons-vue'
 
-const emit = defineEmits(['openPoiDialog', 'openUserDialog'])
+const emit = defineEmits<{
+    (e: 'openPoiDialog'): void
+    (e: 'openUserDialog'): void
+}>()
 </script>
 
 <style scoped>

@@ -2,6 +2,8 @@
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "module": "ESNEXT",
+    "moduleResolution": "node",
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

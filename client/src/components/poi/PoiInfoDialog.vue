@@ -1,6 +1,6 @@
 <template>
     <el-dialog v-model="visible" :title="poi?.name || ''" width="400px" :modal="true" :append-to-body="true"
-        destroy-on-close :show-close="true" @close="$emit('close')">
+        destroy-on-close :show-close="true" @close="emit('close')">
         <template v-if="poi">
             <div class="info-content">
                 <div class="info-item">
@@ -18,7 +18,7 @@
             </div>
         </template>
         <template #footer>
-            <el-button type="primary" @click="$emit('focus')">
+            <el-button type="primary" @click="handleFocus">
                 <el-icon>
                     <Location />
                 </el-icon>
@@ -32,18 +32,13 @@
 import { computed } from 'vue'
 import { Location } from '@element-plus/icons-vue'
 import { poiTypeMap } from '../../constants/poi'
+import type { PoiInfoDialogProps, PoiInfoDialogEmits, PoiInfoDialogExpose } from './PoiInfoDialog'
 import type { Poi } from '../../types/poi'
+import { useVueCesium } from 'vue-cesium'
 
-const props = defineProps<{
-    modelValue: boolean
-    poi: Poi | null
-}>()
-
-const emit = defineEmits<{
-    'update:modelValue': [value: boolean]
-    close: []
-    focus: []
-}>()
+const props = defineProps<PoiInfoDialogProps>()
+const emit = defineEmits<PoiInfoDialogEmits>()
+const $vc = useVueCesium()
 
 const visible = computed({
     get: () => props.modelValue,
@@ -54,6 +49,43 @@ const formatCoordinate = (value: number) => {
     const num = Number(value)
     return isNaN(num) ? '0.000000' : num.toFixed(6)
 }
+
+// 聚焦到POI
+const focusOnPoi = (poi: Poi) => {
+    console.log('poi: ', poi)
+    const { Cesium, viewer } = $vc
+
+    if (!viewer || !Cesium) return
+
+    viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+            poi.longitude,
+            poi.latitude - 0.015,
+            1000
+        ),
+        orientation: {
+            heading: Cesium.Math.toRadians(0),
+            pitch: Cesium.Math.toRadians(-40),
+            roll: 0
+        },
+        duration: 2,
+        complete: () => {
+            emit('update:modelValue', false)
+            emit('close')
+        }
+    })
+}
+
+// 处理聚焦
+const handleFocus = () => {
+    if (props.poi) {
+        focusOnPoi(props.poi)
+    }
+}
+
+defineExpose<PoiInfoDialogExpose>({
+    focusOnPoi
+})
 </script>
 
 <style scoped>

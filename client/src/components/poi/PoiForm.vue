@@ -29,27 +29,32 @@
     </el-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { poiTypeMap, poiFormRules } from '../../constants/poi'
+import type { PoiFormProps, PoiFormEmits, PoiFormExpose } from './PoiForm'
 
-const props = defineProps({
-    modelValue: Boolean,
-    editingPoi: Object,
-    defaultPosition: Array
-})
-
-const emit = defineEmits(['update:modelValue', 'submit'])
+const props = defineProps<PoiFormProps>()
+const emit = defineEmits<PoiFormEmits>()
 
 const visible = computed({
     get: () => props.modelValue,
     set: (value) => emit('update:modelValue', value)
 })
 
-const formRef = ref(null)
+const formRef = ref<any>(null)
 const submitting = ref(false)
 
-const form = ref({
+interface FormData {
+    name: string
+    type: string
+    longitude: number
+    latitude: number
+    height: number
+    description: string
+}
+
+const form = ref<FormData>({
     name: '',
     type: 'education',
     longitude: props.defaultPosition?.[0] || 0,
@@ -59,7 +64,7 @@ const form = ref({
 })
 
 // 设置坐标值的方法
-const setPosition = (position) => {
+const setPosition = (position: { longitude: string, latitude: string, height: string }) => {
     const { longitude, latitude, height } = position
     form.value.longitude = Number(longitude)
     form.value.latitude = Number(latitude)
@@ -67,7 +72,7 @@ const setPosition = (position) => {
 }
 
 // 对外暴露方法
-defineExpose({
+defineExpose<PoiFormExpose>({
     setPosition
 })
 
@@ -76,7 +81,7 @@ const rules = poiFormRules
 const handleSubmit = async () => {
     if (!formRef.value) return
 
-    await formRef.value.validate(async (valid) => {
+    await formRef.value.validate(async (valid: boolean) => {
         if (!valid) return
         submitting.value = true
         try {
@@ -92,7 +97,14 @@ const handleSubmit = async () => {
 // 监听编辑对象变化
 watch(() => props.editingPoi, (newPoi) => {
     if (newPoi) {
-        form.value = { ...newPoi }
+        form.value = {
+            name: newPoi.name,
+            type: newPoi.type,
+            longitude: newPoi.longitude,
+            latitude: newPoi.latitude,
+            height: newPoi.height,
+            description: newPoi.description || ''
+        }
     } else {
         form.value = {
             name: '',

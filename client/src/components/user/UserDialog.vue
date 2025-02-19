@@ -71,21 +71,24 @@
     </el-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUsers } from '../../composables/useUsers'
 
-const props = defineProps({
-    modelValue: Boolean,
-})
+interface Props {
+    modelValue: boolean
+}
 
-const emit = defineEmits(['update:modelValue'])
+const props = defineProps<Props>()
+const emit = defineEmits<{
+    (e: 'update:modelValue', value: boolean): void
+}>()
 
-const dialogVisible = computed({
+const visible = computed({
     get: () => props.modelValue,
-    set: (val) => emit('update:modelValue', val)
+    set: (value) => emit('update:modelValue', value)
 })
 
 const {
@@ -167,7 +170,7 @@ const handleDelete = (user) => {
 const handleSubmit = async () => {
     if (!formRef.value) return
 
-    await formRef.value.validate(async (valid) => {
+    await formRef.value.validate(async (valid: any) => {
         if (valid) {
             try {
                 if (editingUser.value) {
