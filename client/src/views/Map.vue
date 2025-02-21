@@ -1,7 +1,7 @@
 <template>
   <div class="map-page">
     <el-header class="header">
-      <div class="title">地图系统</div>
+      <div class="title">cesium校园系统</div>
       <div class="user-info">
         <span>{{ userStore.user.username }}</span>
         <el-button type="text" @click="handleLogout">退出</el-button>

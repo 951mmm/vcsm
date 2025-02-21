@@ -76,6 +76,8 @@ import { ref, computed, onMounted } from 'vue'
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUsers } from '../../composables/useUsers'
+import type { User, UserRole } from '../../types/user'
+import type { FormInstance } from 'element-plus'
 
 interface Props {
     modelValue: boolean
@@ -86,7 +88,7 @@ const emit = defineEmits<{
     (e: 'update:modelValue', value: boolean): void
 }>()
 
-const visible = computed({
+const dialogVisible = computed({
     get: () => props.modelValue,
     set: (value) => emit('update:modelValue', value)
 })
@@ -102,13 +104,13 @@ const {
 } = useUsers()
 
 const formVisible = ref(false)
-const editingUser = ref(null)
-const formRef = ref(null)
+const editingUser = ref<User | null>(null)
+const formRef = ref<FormInstance | null>(null)
 
 const form = ref({
     username: '',
     password: '',
-    role: 'user',
+    role: 'user' as UserRole
 })
 
 const rules = {
@@ -134,21 +136,22 @@ const handleAdd = () => {
     form.value = {
         username: '',
         password: '',
-        role: 'user',
+        role: 'user'
     }
     formVisible.value = true
 }
 
-const handleEdit = (user) => {
+const handleEdit = (user: User) => {
     editingUser.value = user
     form.value = {
         username: user.username,
-        role: user.role,
+        password: '',
+        role: user.role
     }
     formVisible.value = true
 }
 
-const handleDelete = (user) => {
+const handleDelete = (user: User) => {
     ElMessageBox.confirm(
         `确定要删除用户 "${user.username}" 吗？`,
         '警告',
@@ -162,7 +165,11 @@ const handleDelete = (user) => {
             await deleteUser(user.id)
             ElMessage.success('删除成功')
         } catch (error) {
-            ElMessage.error(error.message)
+            if (error instanceof Error) {
+                ElMessage.error(error.message)
+            } else {
+                ElMessage.error('删除失败')
+            }
         }
     })
 }
@@ -170,7 +177,7 @@ const handleDelete = (user) => {
 const handleSubmit = async () => {
     if (!formRef.value) return
 
-    await formRef.value.validate(async (valid: any) => {
+    await formRef.value.validate(async (valid: boolean) => {
         if (valid) {
             try {
                 if (editingUser.value) {
@@ -182,7 +189,11 @@ const handleSubmit = async () => {
                 }
                 formVisible.value = false
             } catch (error) {
-                ElMessage.error(error.message)
+                if (error instanceof Error) {
+                    ElMessage.error(error.message)
+                } else {
+                    ElMessage.error('操作失败')
+                }
             }
         }
     })
